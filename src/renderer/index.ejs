@@ -4,9 +4,22 @@
     <meta charset="utf-8" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="script-src 'self' 'unsafe-inline'"
+      content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net"
     />
     <title>Bienvendio a VietMath!</title>
+    <!-- MathJax for LaTeX rendering -->
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [['\\(', '\\)']],
+          displayMath: [['\\[', '\\]']],
+        },
+        svg: {
+          fontCache: 'global'
+        }
+      };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
   </head>
   <body>
     <div id="root"></div>
