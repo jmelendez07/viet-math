@@ -7,7 +7,19 @@ interface Simpson13Input {
     n: number;       // Número de subintervalos (debe ser par)
 }
 
-const calculateSimpson13 = ({ funcStr, a, b, n }: Simpson13Input): number => {
+// Define la estructura de cada punto de iteración
+export interface Simpson13Iteration {
+    x: number;
+    y: number;
+}
+
+// Define la nueva estructura del valor de retorno
+export interface Simpson13Output {
+    integral: number;
+    iterations: Simpson13Iteration[];
+}
+
+const calculateSimpson13 = ({ funcStr, a, b, n }: Simpson13Input): Simpson13Output => {
     const mexp = new Mexp();
 
     if (n <= 0 || n % 2 !== 0) {
@@ -15,6 +27,8 @@ const calculateSimpson13 = ({ funcStr, a, b, n }: Simpson13Input): number => {
     }
 
     const h = (b - a) / n;
+    const iterations: Simpson13Iteration[] = [];
+    let sum = 0;
 
     // Función para evaluar f(x) en un punto dado
     const f = (x: number): number => {
@@ -23,19 +37,26 @@ const calculateSimpson13 = ({ funcStr, a, b, n }: Simpson13Input): number => {
         return mexp.postfixEval(postfixed, { x: x });
     };
 
-    let sum = f(a) + f(b); // Suma el primer y último término
-
-    for (let i = 1; i < n; i++) {
+    // Bucle de 0 a n para incluir los límites inferior y superior
+    for (let i = 0; i <= n; i++) {
         const x_i = a + i * h;
-        if (i % 2 !== 0) {
-            sum += 4 * f(x_i); // Coeficiente 4 para los términos impares
+        const y_i = f(x_i);
+        iterations.push({ x: x_i, y: y_i });
+
+        // Aplicar coeficientes de Simpson 1/3
+        if (i === 0 || i === n) {
+            sum += y_i; // Coeficiente 1 para los extremos
+        } else if (i % 2 !== 0) {
+            sum += 4 * y_i; // Coeficiente 4 para los términos impares
         } else {
-            sum += 2 * f(x_i); // Coeficiente 2 para los términos pares
+            sum += 2 * y_i; // Coeficiente 2 para los términos pares
         }
     }
 
     const integral = (h / 3) * sum;
-    return integral;
+
+    // Retorna el objeto con la integral y el array de iteraciones
+    return { integral, iterations };
 };
 
 export { calculateSimpson13, Simpson13Input };
