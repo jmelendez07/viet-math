@@ -1,4 +1,4 @@
-import Mexp from 'math-expression-evaluator';
+import { evaluateExpression } from './mathEvaluator';
 
 interface SimpsonAbiertoInput {
     funcStr: string; // La función como texto
@@ -20,8 +20,6 @@ export interface SimpsonAbiertoOutput {
 }
 
 const calculateSimpsonAbierto = ({ funcStr, a, b, n }: SimpsonAbiertoInput): SimpsonAbiertoOutput => {
-    const mexp = new Mexp();
-
     if (n <= 0 || n % 2 !== 0) {
         throw new Error("El número de subintervalos (n) debe ser un número par positivo.");
     }
@@ -32,9 +30,7 @@ const calculateSimpsonAbierto = ({ funcStr, a, b, n }: SimpsonAbiertoInput): Sim
 
     // Función para evaluar f(x) en un punto dado
     const f = (x: number): number => {
-        const lexed = mexp.lex(funcStr, [{ token: 'x', type: 3, value: 'x', show: 'x', precedence: 11 }]);
-        const postfixed = mexp.toPostfix(lexed);
-        return mexp.postfixEval(postfixed, { x: x });
+        return evaluateExpression(funcStr, x);
     };
 
     // El bucle va de 1 a n-1, ya que las fórmulas abiertas no usan los puntos finales a y b.

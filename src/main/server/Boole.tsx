@@ -1,4 +1,4 @@
-import Mexp from 'math-expression-evaluator';
+import { evaluateExpression } from './mathEvaluator';
 
 interface BooleInput {
     funcStr: string; // La función como texto, ej: "x^4"
@@ -20,8 +20,6 @@ export interface BooleOutput {
 }
 
 const calculateBoole = ({ funcStr, a, b, n }: BooleInput): BooleOutput => {
-    const mexp = new Mexp();
-
     if (n <= 0 || n % 4 !== 0) {
         throw new Error("El número de subintervalos (n) debe ser un múltiplo de 4 positivo.");
     }
@@ -32,9 +30,7 @@ const calculateBoole = ({ funcStr, a, b, n }: BooleInput): BooleOutput => {
 
     // Función para evaluar f(x) en un punto dado
     const f = (x: number): number => {
-        const lexed = mexp.lex(funcStr, [{ token: 'x', type: 3, value: 'x', show: 'x', precedence: 11 }]);
-        const postfixed = mexp.toPostfix(lexed);
-        return mexp.postfixEval(postfixed, { x: x });
+        return evaluateExpression(funcStr, x);
     };
 
     // Regla compuesta extendida

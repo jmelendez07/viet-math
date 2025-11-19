@@ -1,4 +1,4 @@
-import Mexp from 'math-expression-evaluator';
+import { evaluateExpression } from './mathEvaluator';
 
 interface SimpsonInput {
     funcStr: string; // La función como texto
@@ -20,8 +20,6 @@ export interface SimpsonOutput {
 }
 
 const calculateSimpson = ({ funcStr, a, b, n }: SimpsonInput): SimpsonOutput => {
-    const mexp = new Mexp();
-
     if (n <= 0 || n % 3 !== 0) {
         throw new Error("El número de subintervalos (n) debe ser un múltiplo de 3 positivo.");
     }
@@ -32,9 +30,7 @@ const calculateSimpson = ({ funcStr, a, b, n }: SimpsonInput): SimpsonOutput => 
 
     // Función para evaluar f(x) en un punto dado
     const f = (x: number): number => {
-        const lexed = mexp.lex(funcStr, [{ token: 'x', type: 3, value: 'x', show: 'x', precedence: 11 }]);
-        const postfixed = mexp.toPostfix(lexed);
-        return mexp.postfixEval(postfixed, { x: x });
+        return evaluateExpression(funcStr, x);
     };
 
     for (let i = 0; i <= n; i++) {

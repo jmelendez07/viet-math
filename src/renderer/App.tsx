@@ -20,33 +20,39 @@ interface Iteration {
 // Convertir expresión matemática simple a LaTeX
 function toLatex(expr: string): string {
   let latex = expr;
-  // x^2 -> x^{2}
+  
+  // Remover Math. antes de las funciones
+  latex = latex.replace(/Math\./g, '');
+  
+  // Funciones trigonométricas y matemáticas -> LaTeX
+  const mathFuncs = [
+    'sin', 'cos', 'tan', 'cot', 'sec', 'csc',
+    'asin', 'acos', 'atan',
+    'sinh', 'cosh', 'tanh',
+    'log', 'ln', 'exp', 'sqrt'
+  ];
+  
+  mathFuncs.forEach(func => {
+    const regex = new RegExp(`\\b${func}\\b`, 'g');
+    latex = latex.replace(regex, `\\${func}`);
+  });
+  
+  // Exponenciación: x^2 -> x^{2}, x^(a+b) -> x^{a+b}
   latex = latex.replace(/\^(\d+)/g, '^{$1}');
+  latex = latex.replace(/\^(\([^)]+\))/g, '^{$1}');
   latex = latex.replace(/\^([a-zA-Z])/g, '^{$1}');
-  // Math.sin(x) -> \sin(x)
-  latex = latex.replace(/Math\.(sin|cos|tan|log|exp|sqrt)/g, '\\$1');
-  // sin(x) -> \sin(x)
-  latex = latex.replace(/\b(sin|cos|tan|log|exp|sqrt)\b/g, '\\$1');
-  // * -> \cdot
-  latex = latex.replace(/\*/g, ' \\cdot ');
+  
+  // Multiplicación: * -> \cdot (pero no en operaciones implícitas)
+  latex = latex.replace(/\s*\*\s*/g, ' \\cdot ');
+  
   return latex;
 }
 
 const DEFAULT_EXERCISES: Exercise[] = [
   {
     id: '1',
-    name: 'Parábola simple',
-    funcStr: 'x^2',
-    funcLatex: 'x^{2}',
-    a: '0',
-    b: '2',
-    n: '12',
-    method: 'trapezoidal',
-  },
-  {
-    id: '2',
     name: 'Función seno',
-    funcStr: 'Math.sin(x)',
+    funcStr: 'sin(x)',
     funcLatex: '\\sin(x)',
     a: '0',
     b: '3.14159',
@@ -54,7 +60,7 @@ const DEFAULT_EXERCISES: Exercise[] = [
     method: 'simpson13',
   },
   {
-    id: '3',
+    id: '2',
     name: 'Cúbica',
     funcStr: 'x^3 - 2*x',
     funcLatex: 'x^{3} - 2 \\cdot x',
@@ -71,7 +77,7 @@ function Calculator() {
   
   const currentExercise = exercises.find((ex) => ex.id === currentExerciseId);
   
-  const [funcStr, setFuncStr] = useState(currentExercise?.funcStr || 'x^2');
+  const [funcStr, setFuncStr] = useState(currentExercise?.funcStr || 'sin(x)');
   const [a, setA] = useState(currentExercise?.a || '0');
   const [b, setB] = useState(currentExercise?.b || '1');
   const [n, setN] = useState(currentExercise?.n || '12');
@@ -165,12 +171,12 @@ function Calculator() {
     const newExercise: Exercise = {
       id: newId,
       name: `Ejercicio ${exercises.length + 1}`,
-      funcStr: 'x^2',
-      funcLatex: 'x^{2}',
+      funcStr: 'sin(x)',
+      funcLatex: '\\sin(x)',
       a: '0',
       b: '1',
       n: '12',
-      method: 'trapezoidal',
+      method: 'simpson13',
     };
     setExercises([...exercises, newExercise]);
     setCurrentExerciseId(newId);
@@ -227,7 +233,7 @@ function Calculator() {
             Función f(x):
             <input
               type="text"
-              placeholder="Ej: x^2 or Math.sin(x)"
+              placeholder="Ej: sin(x), x^2, cos(x)*x, tan(x)"
               value={funcStr}
               onChange={(e) => setFuncStr(e.target.value)}
             />

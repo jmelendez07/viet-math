@@ -151,37 +151,6 @@ export default class MenuBuilder {
         { label: 'Bring All to Front', selector: 'arrangeInFront:' },
       ],
     };
-    const subMenuHelp: MenuItemConstructorOptions = {
-      label: 'Help',
-      submenu: [
-        {
-          label: 'Learn More',
-          click() {
-            shell.openExternal('https://electronjs.org');
-          },
-        },
-        {
-          label: 'Documentation',
-          click() {
-            shell.openExternal(
-              'https://github.com/electron/electron/tree/main/docs#readme',
-            );
-          },
-        },
-        {
-          label: 'Community Discussions',
-          click() {
-            shell.openExternal('https://www.electronjs.org/community');
-          },
-        },
-        {
-          label: 'Search Issues',
-          click() {
-            shell.openExternal('https://github.com/electron/electron/issues');
-          },
-        },
-      ],
-    };
 
     const subMenuView =
       process.env.NODE_ENV === 'development' ||
@@ -189,20 +158,16 @@ export default class MenuBuilder {
         ? subMenuViewDev
         : subMenuViewProd;
 
-    return [subMenuAbout, subMenuEdit, subMenuView, subMenuWindow, subMenuHelp];
+    return [subMenuAbout, subMenuEdit, subMenuView, subMenuWindow];
   }
 
   buildDefaultTemplate() {
     const templateDefault = [
       {
-        label: '&File',
+        label: '&VietMath',
         submenu: [
           {
-            label: '&Open',
-            accelerator: 'Ctrl+O',
-          },
-          {
-            label: '&Close',
+            label: '&Cerrar',
             accelerator: 'Ctrl+W',
             click: () => {
               this.mainWindow.close();
@@ -211,20 +176,20 @@ export default class MenuBuilder {
         ],
       },
       {
-        label: '&View',
+        label: '&Vista',
         submenu:
           process.env.NODE_ENV === 'development' ||
           process.env.DEBUG_PROD === 'true'
             ? [
                 {
-                  label: '&Reload',
+                  label: '&Recargar',
                   accelerator: 'Ctrl+R',
                   click: () => {
                     this.mainWindow.webContents.reload();
                   },
                 },
                 {
-                  label: 'Toggle &Full Screen',
+                  label: 'Alternar Pantalla Completa',
                   accelerator: 'F11',
                   click: () => {
                     this.mainWindow.setFullScreen(
@@ -232,17 +197,10 @@ export default class MenuBuilder {
                     );
                   },
                 },
-                {
-                  label: 'Toggle &Developer Tools',
-                  accelerator: 'Alt+Ctrl+I',
-                  click: () => {
-                    this.mainWindow.webContents.toggleDevTools();
-                  },
-                },
               ]
             : [
                 {
-                  label: 'Toggle &Full Screen',
+                  label: 'Alternar Pantalla Completa',
                   accelerator: 'F11',
                   click: () => {
                     this.mainWindow.setFullScreen(
@@ -251,37 +209,6 @@ export default class MenuBuilder {
                   },
                 },
               ],
-      },
-      {
-        label: 'Help',
-        submenu: [
-          {
-            label: 'Learn More',
-            click() {
-              shell.openExternal('https://electronjs.org');
-            },
-          },
-          {
-            label: 'Documentation',
-            click() {
-              shell.openExternal(
-                'https://github.com/electron/electron/tree/main/docs#readme',
-              );
-            },
-          },
-          {
-            label: 'Community Discussions',
-            click() {
-              shell.openExternal('https://www.electronjs.org/community');
-            },
-          },
-          {
-            label: 'Search Issues',
-            click() {
-              shell.openExternal('https://github.com/electron/electron/issues');
-            },
-          },
-        ],
       },
     ];
 

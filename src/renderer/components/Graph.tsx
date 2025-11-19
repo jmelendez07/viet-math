@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
+import { createEvaluator } from '../../main/server/mathEvaluator';
 
 interface Iteration {
   x: number;
@@ -27,27 +28,6 @@ interface Props {
   method: string;
 }
 
-function parseFunction(expr: string) {
-  if (!expr || expr.trim() === '') return (x: number) => 0;
-  let safe = expr.replace(/\^/g, '**');
-  safe = safe.replace(/\b(sin|cos|tan|log|exp|sqrt|abs|max|min|pow)\b/g, 'Math.$1');
-  try {
-    // eslint-disable-next-line no-new-func
-    const fn = new Function('x', `with (Math) { return ${safe}; }`);
-    return (x: number) => {
-      try {
-        const v = fn(x);
-        if (typeof v === 'number' && isFinite(v)) return v;
-        return NaN;
-      } catch {
-        return NaN;
-      }
-    };
-  } catch (e) {
-    return (x: number) => NaN;
-  }
-}
-
 const Graph: React.FC<Props> = ({ funcStr, funcLatex, a, b, iterations, method }) => {
   // Trigger MathJax typesetting when content changes
   React.useEffect(() => {
@@ -56,17 +36,27 @@ const Graph: React.FC<Props> = ({ funcStr, funcLatex, a, b, iterations, method }
     }
   }, [funcStr, funcLatex]);
 
-  const chartData = useMemo(() => {
-    const f = parseFunction(funcStr);
+  const { chartData, yDomain } = useMemo(() => {
+    const f = createEvaluator(funcStr);
     const SAMPLE = 200;
     const functionData: Array<{ x: number; fx: number; approx?: number }> = [];
+    
+    let minY = Infinity;
+    let maxY = -Infinity;
 
     // Generate smooth function curve
     for (let i = 0; i <= SAMPLE; i++) {
       const t = i / SAMPLE;
       const x = a + (b - a) * t;
       const fx = f(x);
-      functionData.push({ x: Number(x.toFixed(6)), fx: Number(fx.toFixed(6)) });
+      const fxValue = Number(fx.toFixed(6));
+      
+      if (isFinite(fxValue)) {
+        minY = Math.min(minY, fxValue);
+        maxY = Math.max(maxY, fxValue);
+      }
+      
+      functionData.push({ x: Number(x.toFixed(6)), fx: fxValue });
     }
 
     // Add ALL iteration points to the data
@@ -77,6 +67,11 @@ const Graph: React.FC<Props> = ({ funcStr, funcLatex, a, b, iterations, method }
       iterations.forEach(it => {
         const x = Number(it.x.toFixed(6));
         const y = Number(it.y.toFixed(6));
+        
+        if (isFinite(y)) {
+          minY = Math.min(minY, y);
+          maxY = Math.max(maxY, y);
+        }
         
         if (existingX.has(x)) {
           // If point exists in function data, add approx value
@@ -92,7 +87,15 @@ const Graph: React.FC<Props> = ({ funcStr, funcLatex, a, b, iterations, method }
       functionData.sort((a, b) => a.x - b.x);
     }
 
-    return functionData;
+    // Calculate Y domain with padding
+    const yRange = maxY - minY;
+    const yPadding = yRange * 0.1; // 10% padding
+    const calculatedYDomain = [
+      minY - yPadding,
+      maxY + yPadding
+    ];
+
+    return { chartData: functionData, yDomain: calculatedYDomain };
   }, [funcStr, a, b, iterations]);
 
   const methodColors: Record<string, string> = {
@@ -138,10 +141,14 @@ const Graph: React.FC<Props> = ({ funcStr, funcLatex, a, b, iterations, method }
             domain={['dataMin', 'dataMax']}
             tick={{ fontSize: 12, fill: '#6b7280' }}
             label={{ value: 'x', position: 'insideBottom', offset: -10, style: { fill: '#374151' } }}
+            allowDataOverflow={false}
           />
           <YAxis
+            type="number"
+            domain={yDomain}
             tick={{ fontSize: 12, fill: '#6b7280' }}
             label={{ value: 'f(x)', angle: -90, position: 'insideLeft', style: { fill: '#374151' } }}
+            allowDataOverflow={false}
           />
           <Tooltip
             contentStyle={{
@@ -151,13 +158,23 @@ const Graph: React.FC<Props> = ({ funcStr, funcLatex, a, b, iterations, method }
               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
             }}
             labelStyle={{ color: '#374151', fontWeight: 600 }}
-            formatter={(value: any) => [Number(value).toFixed(6), '']}
+            formatter={(value: any) => {
+              if (typeof value === 'number' && isFinite(value)) {
+                return [value.toFixed(6), ''];
+              }
+              return [value, ''];
+            }}
           />
           <Legend
             wrapperStyle={{ paddingTop: '20px' }}
             iconType="line"
           />
-          <ReferenceLine y={0} stroke="#9ca3af" strokeWidth={1.5} />
+          {/* Eje Y (línea vertical en x=0) - solo si 0 está en el rango */}
+          {a <= 0 && b >= 0 && (
+            <ReferenceLine x={0} stroke="#374151" strokeWidth={2} />
+          )}
+          {/* Eje X (línea horizontal en y=0) - siempre visible */}
+          <ReferenceLine y={0} stroke="#374151" strokeWidth={2} />
           
           {/* Area under curve with vivid color */}
           <Area

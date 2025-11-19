@@ -1,4 +1,4 @@
-import Mexp from 'math-expression-evaluator';
+import { evaluateExpression } from './mathEvaluator';
 
 interface Simpson13Input {
     funcStr: string; // La función como texto
@@ -20,8 +20,6 @@ export interface Simpson13Output {
 }
 
 const calculateSimpson13 = ({ funcStr, a, b, n }: Simpson13Input): Simpson13Output => {
-    const mexp = new Mexp();
-
     if (n <= 0 || n % 2 !== 0) {
         throw new Error("El número de subintervalos (n) debe ser un número par positivo.");
     }
@@ -32,9 +30,7 @@ const calculateSimpson13 = ({ funcStr, a, b, n }: Simpson13Input): Simpson13Outp
 
     // Función para evaluar f(x) en un punto dado
     const f = (x: number): number => {
-        const lexed = mexp.lex(funcStr, [{ token: 'x', type: 3, value: 'x', show: 'x', precedence: 11 }]);
-        const postfixed = mexp.toPostfix(lexed);
-        return mexp.postfixEval(postfixed, { x: x });
+        return evaluateExpression(funcStr, x);
     };
 
     // Bucle de 0 a n para incluir los límites inferior y superior
