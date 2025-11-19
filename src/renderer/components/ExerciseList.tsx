@@ -96,10 +96,14 @@ const ExerciseList: React.FC<Props> = ({
                     <div className="exercise-info">
                       {ex.funcLatex ? (
                         <span className="exercise-latex">
-                          {`\\(${ex.funcLatex}\\)`}
+                          {`\\(\\int_{${ex.a}}^{${ex.b}} ${ex.funcLatex} \\, dx\\)`}
                         </span>
                       ) : (
-                        <code>{ex.funcStr}</code>
+                        <>
+                          <span className="exercise-latex">
+                            {`\\(\\int_{${ex.a}}^{${ex.b}} ${ex.funcStr} \\, dx\\)`}
+                          </span>
+                        </>
                       )}
                     </div>
                   </>

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   LineChart,
   Line,
@@ -29,6 +29,23 @@ interface Props {
 }
 
 const Graph: React.FC<Props> = ({ funcStr, funcLatex, a, b, iterations, method }) => {
+  // Image URLs for rotation
+  const images = [
+    'https://res.cloudinary.com/dvibz13t8/image/upload/v1763594303/rambo_xtbgcx.png',
+    'https://res.cloudinary.com/dvibz13t8/image/upload/v1763594570/rambo-3_etv0z3.png'
+  ];
+  
+  // Image rotation state
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Rotate images every 3 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [images.length]);
+
   // Trigger MathJax typesetting when content changes
   React.useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).MathJax) {
@@ -36,27 +53,41 @@ const Graph: React.FC<Props> = ({ funcStr, funcLatex, a, b, iterations, method }
     }
   }, [funcStr, funcLatex]);
 
-  const { chartData, yDomain } = useMemo(() => {
+  // Check if function string is empty or invalid
+  const isEmpty = !funcStr || funcStr.trim() === '';
+
+  const { chartData, yDomain, hasValidData } = useMemo(() => {
+    // If empty, return empty data
+    if (isEmpty) {
+      return { 
+        chartData: [], 
+        yDomain: [0, 1], 
+        hasValidData: false 
+      };
+    }
+
     const f = createEvaluator(funcStr);
     const SAMPLE = 200;
     const functionData: Array<{ x: number; fx: number; approx?: number }> = [];
     
     let minY = Infinity;
     let maxY = -Infinity;
+    let hasFiniteValues = false;
 
     // Generate smooth function curve
     for (let i = 0; i <= SAMPLE; i++) {
       const t = i / SAMPLE;
       const x = a + (b - a) * t;
       const fx = f(x);
-      const fxValue = Number(fx.toFixed(6));
+      const fxValue = Number(fx.toFixed(10));
       
       if (isFinite(fxValue)) {
         minY = Math.min(minY, fxValue);
         maxY = Math.max(maxY, fxValue);
+        hasFiniteValues = true;
       }
       
-      functionData.push({ x: Number(x.toFixed(6)), fx: fxValue });
+      functionData.push({ x: Number(x.toFixed(10)), fx: fxValue });
     }
 
     // Add ALL iteration points to the data
@@ -65,12 +96,13 @@ const Graph: React.FC<Props> = ({ funcStr, funcLatex, a, b, iterations, method }
       const existingX = new Set(functionData.map(p => p.x));
       
       iterations.forEach(it => {
-        const x = Number(it.x.toFixed(6));
-        const y = Number(it.y.toFixed(6));
+        const x = Number(it.x.toFixed(10));
+        const y = Number(it.y.toFixed(10));
         
         if (isFinite(y)) {
           minY = Math.min(minY, y);
           maxY = Math.max(maxY, y);
+          hasFiniteValues = true;
         }
         
         if (existingX.has(x)) {
@@ -87,6 +119,15 @@ const Graph: React.FC<Props> = ({ funcStr, funcLatex, a, b, iterations, method }
       functionData.sort((a, b) => a.x - b.x);
     }
 
+    // If no valid data, return empty
+    if (!hasFiniteValues) {
+      return { 
+        chartData: [], 
+        yDomain: [0, 1], 
+        hasValidData: false 
+      };
+    }
+
     // Calculate Y domain with padding
     const yRange = maxY - minY;
     const yPadding = yRange * 0.1; // 10% padding
@@ -95,8 +136,12 @@ const Graph: React.FC<Props> = ({ funcStr, funcLatex, a, b, iterations, method }
       maxY + yPadding
     ];
 
-    return { chartData: functionData, yDomain: calculatedYDomain };
-  }, [funcStr, a, b, iterations]);
+    return { 
+      chartData: functionData, 
+      yDomain: calculatedYDomain,
+      hasValidData: true
+    };
+  }, [funcStr, a, b, iterations, isEmpty]);
 
   const methodColors: Record<string, string> = {
     trapezoidal: '#ef4444',
@@ -127,14 +172,47 @@ const Graph: React.FC<Props> = ({ funcStr, funcLatex, a, b, iterations, method }
             </>
           ) : (
             <>
-              f(x) = <code>{funcStr}</code> en [{a.toFixed(2)}, {b.toFixed(2)}]
+              f(x) = <code>{funcStr || '(sin función)'}</code> en [{a.toFixed(2)}, {b.toFixed(2)}]
             </>
           )}
         </p>
       </div>
-      <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+      {!hasValidData ? (
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          gap: '12px',
+          color: '#6b7280',
+          padding: '40px'
+        }}>
+          <img 
+            src={images[currentImageIndex]} 
+            alt="No graph" 
+            style={{
+              width: '600px',
+              height: '300px',
+              filter: 'grayscale(100%)',
+              opacity: 0.6,
+              objectFit: 'cover',
+              transition: 'opacity 0.5s ease-in-out'
+            }}
+          />
+          <div style={{ fontSize: '16px', fontWeight: 600, color: '#374151' }}>
+            {isEmpty ? 'Ingresa una función' : 'Sin datos para graficar'}
+          </div>
+          <div style={{ fontSize: '14px', textAlign: 'center', maxWidth: '300px' }}>
+            {isEmpty 
+              ? 'Escribe una función matemática en el campo "Función f(x)" para visualizar su gráfica.'
+              : 'La función no genera valores válidos en el intervalo especificado.'}
+          </div>
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis
             dataKey="x"
             type="number"
@@ -160,8 +238,8 @@ const Graph: React.FC<Props> = ({ funcStr, funcLatex, a, b, iterations, method }
             labelStyle={{ color: '#374151', fontWeight: 600 }}
             formatter={(value: any) => {
               if (typeof value === 'number' && isFinite(value)) {
-                return [value.toFixed(6), ''];
-              }
+                  return [value.toFixed(10), ''];
+                }
               return [value, ''];
             }}
           />
@@ -214,8 +292,9 @@ const Graph: React.FC<Props> = ({ funcStr, funcLatex, a, b, iterations, method }
               connectNulls={false}
             />
           )}
-        </ComposedChart>
-      </ResponsiveContainer>
+          </ComposedChart>
+        </ResponsiveContainer>
+      )}
     </div>
   );
 };

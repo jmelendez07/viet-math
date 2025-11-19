@@ -5,18 +5,41 @@
   padding: 24px;
   box-sizing: border-box;
   height: 100vh;
-  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+  background-image: url('../../assets/viethnam.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
 }
 
 .sidebar {
-  width: 360px;
+  width: 400px;
   background: #ffffff;
   border: 1px solid #e5e7eb;
   padding: 24px;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   border-radius: 12px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
 }
 
 .sidebar h2 {
@@ -103,14 +126,15 @@
 .exercise-item {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 10px 12px;
+  align-items: flex-start;
+  padding: 12px;
   margin-bottom: 8px;
   background: #f9fafb;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
+  min-height: 60px;
 }
 
 .exercise-item:hover {
@@ -137,11 +161,12 @@
 }
 
 .exercise-info {
-  font-size: 12px;
+  font-size: 13px;
   color: #6b7280;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.6;
+  max-height: 50px;
 }
 
 .exercise-info code {
@@ -152,8 +177,10 @@
 }
 
 .exercise-latex {
-  font-style: italic;
-  color: #374151;
+  font-style: normal;
+  color: #111827;
+  display: inline-block;
+  font-size: 14px;
 }
 
 .exercise-actions {
@@ -197,12 +224,12 @@
 }
 
 .graph-area {
-  flex: 1 1 auto;
+  flex: 1;
   display: flex;
   align-items: stretch;
   justify-content: center;
-  overflow: hidden;
   min-height: 0;
+  min-width: 0;
 }
 
 .graph-container {
@@ -212,13 +239,13 @@
   padding: 24px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   width: 100%;
-  height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .graph-header {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   flex-shrink: 0;
 }
 
@@ -237,8 +264,9 @@
 }
 
 .graph-container > div:last-child {
-  flex: 1 1 auto;
+  flex: 1;
   min-height: 0;
+  overflow: hidden;
 }
 
 .graph-subtitle code {
@@ -321,6 +349,51 @@
   outline: none;
   border-color: #ef4444;
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.latex-preview {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+}
+
+.latex-preview-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #0369a1;
+  white-space: nowrap;
+}
+
+.latex-preview-content {
+  flex: 1;
+  font-size: 16px;
+  color: #0c4a6e;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.latex-preview-content::-webkit-scrollbar {
+  height: 4px;
+}
+
+.latex-preview-content::-webkit-scrollbar-track {
+  background: #e0f2fe;
+  border-radius: 2px;
+}
+
+.latex-preview-content::-webkit-scrollbar-thumb {
+  background: #7dd3fc;
+  border-radius: 2px;
+}
+
+.latex-preview-content::-webkit-scrollbar-thumb:hover {
+  background: #38bdf8;
 }
 
 .btn-primary {

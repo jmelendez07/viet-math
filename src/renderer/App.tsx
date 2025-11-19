@@ -2,9 +2,11 @@ import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 import icon from '../../assets/icon.svg';
 import './App.css';
 import './AppLayout.css';
-import { useState, useEffect } from 'react';
+import './MathKeyboard.css';
+import { useState, useEffect, useRef } from 'react';
 import Graph from './components/Graph';
 import ExerciseList, { Exercise } from './components/ExerciseList';
+import MathKeyboard from './components/MathKeyboard';
 import { calculateTrapezoidal, TrapezoidalOutput } from '../main/server/Trapezoidal';
 import { calculateBoole, BooleOutput } from '../main/server/Boole';
 import { calculateSimpson, SimpsonOutput } from '../main/server/Simpson';
@@ -19,6 +21,8 @@ interface Iteration {
 
 // Convertir expresión matemática simple a LaTeX
 function toLatex(expr: string): string {
+  if (!expr || expr.trim() === '') return '';
+  
   let latex = expr;
   
   // Remover Math. antes de las funciones
@@ -36,6 +40,10 @@ function toLatex(expr: string): string {
     const regex = new RegExp(`\\b${func}\\b`, 'g');
     latex = latex.replace(regex, `\\${func}`);
   });
+  
+  // División: Convertir a/b a \frac{a}{b}
+  // Maneja casos simples: x/2, sin(x)/2, (x+1)/(x-1)
+  latex = latex.replace(/([a-zA-Z0-9]+|\([^)]+\)|\\[a-z]+\([^)]*\))\/([a-zA-Z0-9]+|\([^)]+\))/g, '\\frac{$1}{$2}');
   
   // Exponenciación: x^2 -> x^{2}, x^(a+b) -> x^{a+b}
   latex = latex.replace(/\^(\d+)/g, '^{$1}');
@@ -86,6 +94,9 @@ function Calculator() {
   const [result, setResult] = useState<number | null>(null);
   const [iterations, setIterations] = useState<Iteration[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [showKeyboard, setShowKeyboard] = useState(false);
+  
+  const funcInputRef = useRef<HTMLInputElement>(null);
 
   // Update form when exercise changes
   useEffect(() => {
@@ -113,6 +124,13 @@ function Calculator() {
       );
     }
   }, [funcStr, a, b, n, method, currentExerciseId]);
+
+  // Trigger MathJax when funcStr changes
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).MathJax) {
+      (window as any).MathJax.typesetPromise?.().catch((err: any) => console.log('MathJax error:', err));
+    }
+  }, [funcStr]);
 
   const handleCalculate = () => {
     setResult(null);
@@ -199,6 +217,29 @@ function Calculator() {
     );
   };
 
+  const handleKeyboardInsert = (value: string) => {
+    const input = funcInputRef.current;
+    if (!input) return;
+
+    const start = input.selectionStart || 0;
+    const end = input.selectionEnd || 0;
+    const newValue = funcStr.substring(0, start) + value + funcStr.substring(end);
+    
+    setFuncStr(newValue);
+    
+    // Set cursor position after inserted text
+    setTimeout(() => {
+      const newPos = start + value.length;
+      // For () move cursor inside parenthesis
+      if (value === '()') {
+        input.setSelectionRange(start + 1, start + 1);
+      } else {
+        input.setSelectionRange(newPos, newPos);
+      }
+      input.focus();
+    }, 0);
+  };
+
   const parsedA = parseFloat(a);
   const parsedB = parseFloat(b);
 
@@ -232,12 +273,29 @@ function Calculator() {
           <label>
             Función f(x):
             <input
+              ref={funcInputRef}
               type="text"
               placeholder="Ej: sin(x), x^2, cos(x)*x, tan(x)"
               value={funcStr}
               onChange={(e) => setFuncStr(e.target.value)}
             />
           </label>
+          {funcStr && (
+            <div className="latex-preview">
+              <span className="latex-preview-label">Vista previa:</span>
+              <span className="latex-preview-content">
+                {`\\(${toLatex(funcStr)}\\)`}
+              </span>
+            </div>
+          )}
+          <button 
+            className={`keyboard-toggle-btn ${showKeyboard ? 'active' : ''}`}
+            onClick={() => setShowKeyboard(!showKeyboard)}
+          >
+            <span className="keyboard-icon">⌨️</span>
+            {showKeyboard ? 'Ocultar Teclado' : 'Mostrar Teclado Matemático'}
+          </button>
+          {showKeyboard && <MathKeyboard onInsert={handleKeyboardInsert} />}
         </div>
         <div className='control-inline'>
           <label>
@@ -277,8 +335,8 @@ function Calculator() {
                 {iterations.map((iter, index) => (
                   <tr key={index}>
                     <td>{index}</td>
-                    <td>{iter.x.toFixed(6)}</td>
-                    <td>{iter.y.toFixed(6)}</td>
+                    <td>{iter.x.toFixed(10)}</td>
+                    <td>{iter.y.toFixed(10)}</td>
                   </tr>
                 ))}
               </tbody>

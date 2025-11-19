@@ -14,6 +14,10 @@ export function preprocessExpression(expr: string): string {
   // Reemplazar ^ con ** para exponenciación
   processed = processed.replace(/\^/g, '**');
   
+  // PRIMERO: Agregar constantes matemáticas (antes de agregar Math. a funciones)
+  // para evitar confusión con 'e' de 'exp'
+  processed = processed.replace(/\b(PI|pi)\b/g, 'Math.PI');
+  
   // Agregar Math. a las funciones matemáticas si no lo tienen
   // Lista de funciones matemáticas comunes
   const mathFunctions = [
@@ -37,9 +41,9 @@ export function preprocessExpression(expr: string): string {
     processed = processed.replace(regex, `Math.${func}`);
   });
   
-  // Agregar constantes matemáticas
-  processed = processed.replace(/\bPI\b/g, 'Math.PI');
-  processed = processed.replace(/\bE\b/g, 'Math.E');
+  // DESPUÉS de procesar funciones, reemplazar 'e' que quedó solo
+  // (no es parte de exp, expm1, etc porque ya tienen Math.)
+  processed = processed.replace(/\be\b(?!xp)/g, 'Math.E');
   
   // Agregar multiplicación implícita donde sea necesario
   // Por ejemplo: 2x -> 2*x, 2(x+1) -> 2*(x+1)
