@@ -33,17 +33,21 @@ function toLatex(expr: string): string {
     'sin', 'cos', 'tan', 'cot', 'sec', 'csc',
     'asin', 'acos', 'atan',
     'sinh', 'cosh', 'tanh',
-    'log', 'ln', 'exp', 'sqrt'
+    'ln', 'exp', 'sqrt'
   ];
   
   mathFuncs.forEach(func => {
     const regex = new RegExp(`\\b${func}\\b`, 'g');
     latex = latex.replace(regex, `\\${func}`);
   });
+
+  // Manejar log y log10 específicamente
+  latex = latex.replace(/\blog10\b/g, '\\log_{10}');
+  latex = latex.replace(/\blog\b/g, '\\log_{10}');
   
   // División: Convertir a/b a \frac{a}{b}
   // Maneja casos simples: x/2, sin(x)/2, (x+1)/(x-1)
-  latex = latex.replace(/([a-zA-Z0-9]+|\([^)]+\)|\\[a-z]+\([^)]*\))\/([a-zA-Z0-9]+|\([^)]+\))/g, '\\frac{$1}{$2}');
+  latex = latex.replace(/([a-zA-Z0-9]+|\([^)]+\)|\\[a-z_]+\{[^}]*\}|\\[a-z]+)\s*\/\s*([a-zA-Z0-9]+|\([^)]+\))/g, '\\frac{$1}{$2}');
   
   // Exponenciación: x^2 -> x^{2}, x^(a+b) -> x^{a+b}
   latex = latex.replace(/\^(\d+)/g, '^{$1}');
