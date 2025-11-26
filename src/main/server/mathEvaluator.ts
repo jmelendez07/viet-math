@@ -11,10 +11,52 @@
 export function preprocessExpression(expr: string): string {
   let processed = expr;
 
+  // PRIMERO: Manejar funciones trigonométricas elevadas a potencias (sin^2(x), cos^3(x), etc.)
+  // Convertir sin^2(x) -> (sin(x))^2
+  const trigFunctions = ['sin', 'cos', 'tan', 'sec', 'csc', 'cot', 'asin', 'acos', 'atan', 'sinh', 'cosh', 'tanh', 'ln', 'log', 'sqrt', 'abs', 'exp'];
+  
+  // Función auxiliar para encontrar el paréntesis de cierre
+  const findClosingParen = (str: string, startIdx: number): number => {
+    let depth = 0;
+    for (let i = startIdx; i < str.length; i++) {
+      if (str[i] === '(') depth++;
+      else if (str[i] === ')') {
+        depth--;
+        if (depth === 0) return i;
+      }
+    }
+    return -1;
+  };
+  
+  // Procesar cada función
+  trigFunctions.forEach(func => {
+    let changed = true;
+    while (changed) {
+      changed = false;
+      const regex = new RegExp(`\\b${func}\\^([\\d.]+)\\s*\\(`, 'g');
+      let match;
+      
+      while ((match = regex.exec(processed)) !== null) {
+        const exponent = match[1];
+        const openParenIdx = match.index + match[0].length - 1;
+        const closeParenIdx = findClosingParen(processed, openParenIdx);
+        
+        if (closeParenIdx !== -1) {
+          const args = processed.substring(openParenIdx + 1, closeParenIdx);
+          const before = processed.substring(0, match.index);
+          const after = processed.substring(closeParenIdx + 1);
+          processed = `${before}(${func}(${args}))^${exponent}${after}`;
+          changed = true;
+          break; // Reiniciar el bucle con el nuevo string
+        }
+      }
+    }
+  });
+
   // Reemplazar ^ con ** para exponenciación
   processed = processed.replace(/\^/g, '**');
   
-  // PRIMERO: Procesar logaritmos con marcadores temporales para evitar conflictos
+  // SEGUNDO: Procesar logaritmos con marcadores temporales para evitar conflictos
   // Reemplazar ln(  por _NATURAL_LOG_(  
   processed = processed.replace(/\bln\s*\(/g, '_NATURAL_LOG_(');
   // Reemplazar log(  por _LOG_BASE_10_(  
@@ -43,17 +85,28 @@ export function preprocessExpression(expr: string): string {
   
   // Agregar multiplicación implícita donde sea necesario
   // IMPORTANTE: Hacer esto ANTES de reemplazar los marcadores temporales para evitar conflictos
-  // No agregar * si hay un punto (para Math.xxx) o guion bajo
-  processed = processed.replace(/(\d)([a-zA-Z](?![a-zA-Z0-9]*\())/g, '$1*$2');  // 2x -> 2*x
+  
+  // Primero: número seguido de paréntesis (no precedido por operador, punto o guion bajo)
+  // 2( -> 2*(, pero no -2( ni Math.function(
+  processed = processed.replace(/(\d)\s*(\()(?![.a-zA-Z_])/g, '$1*$2');
+  
+  // Segundo: número seguido de letra (variable x)
+  // 2x -> 2*x, pero evitar tocar Math.xxx
+  processed = processed.replace(/(\d)\s*([a-zA-Z])(?![a-zA-Z0-9._])/g, '$1*$2');
+  
+  // Tercero: paréntesis de cierre seguido de número, letra o paréntesis de apertura
   processed = processed.replace(/(\))(\d)/g, '$1*$2');  // )2 -> )*2
-  // Solo agregar * después de dígitos si NO están seguidos de un marcador temporal
-  processed = processed.replace(/(\d)\s*(\()(?!.*_)/g, '$1*$2');  // 2( -> 2*(, pero no en _LOG_BASE_10_(
+  processed = processed.replace(/(\))([a-zA-Z])/g, '$1*$2');  // )x -> )*x
   processed = processed.replace(/(\))(\()/g, '$1*$2');  // )( -> )*(
   
   // Convertir los marcadores temporales a las funciones correctas de JavaScript
   // Hacer esto AL FINAL para evitar que las reglas de multiplicación los afecten
   processed = processed.replace(/_NATURAL_LOG_/g, 'Math.log');
   processed = processed.replace(/_LOG_BASE_10_/g, 'Math.log10');
+  
+  // Limpiar múltiples asteriscos consecutivos que puedan haberse generado
+  processed = processed.replace(/\*{2,}/g, '**'); // Mantener ** para exponenciación
+  processed = processed.replace(/\*\*\*/g, '**'); // Eliminar *** -> **
   
   console.log('[mathEvaluator] Original:', expr);
   console.log('[mathEvaluator] Procesada:', processed);

@@ -45,17 +45,35 @@ function toLatex(expr: string): string {
   latex = latex.replace(/\blog10\b/g, '\\log_{10}');
   latex = latex.replace(/\blog\b/g, '\\log_{10}');
   
-  // División: Convertir a/b a \frac{a}{b}
-  // Maneja casos simples: x/2, sin(x)/2, (x+1)/(x-1)
-  latex = latex.replace(/([a-zA-Z0-9]+|\([^)]+\)|\\[a-z_]+\{[^}]*\}|\\[a-z]+)\s*\/\s*([a-zA-Z0-9]+|\([^)]+\))/g, '\\frac{$1}{$2}');
-  
-  // Exponenciación: x^2 -> x^{2}, x^(a+b) -> x^{a+b}
+  // Exponenciación ANTES de división: x^2 -> x^{2}, x^(a+b) -> x^{a+b}
   latex = latex.replace(/\^(\d+)/g, '^{$1}');
   latex = latex.replace(/\^(\([^)]+\))/g, '^{$1}');
   latex = latex.replace(/\^([a-zA-Z])/g, '^{$1}');
   
   // Multiplicación: * -> \cdot (pero no en operaciones implícitas)
   latex = latex.replace(/\s*\*\s*/g, ' \\cdot ');
+  
+  // División: Convertir a/b a \frac{a}{b}
+  // Función auxiliar para encontrar paréntesis balanceados
+  const convertDivisionToFrac = (str: string): string => {
+    let result = str;
+    let changed = true;
+    
+    while (changed) {
+      changed = false;
+      // Buscar patrón: (expresión)/(expresión) o número/expresión o expresión/número
+      const divRegex = /(\d+(?:\.\d+)?|[a-zA-Z]+(?:\{[^}]*\})?|\([^()]*(?:\([^()]*\)[^()]*)*\))\s*\/\s*(\d+(?:\.\d+)?|[a-zA-Z]+(?:\{[^}]*\})?|\([^()]*(?:\([^()]*\)[^()]*)*\)|\\[a-z]+\([^)]*\))/;
+      
+      if (divRegex.test(result)) {
+        result = result.replace(divRegex, '\\frac{$1}{$2}');
+        changed = true;
+      }
+    }
+    
+    return result;
+  };
+  
+  latex = convertDivisionToFrac(latex);
   
   return latex;
 }
@@ -136,13 +154,59 @@ function Calculator() {
     }
   }, [funcStr]);
 
+  // Clear results when function or parameters change
+  useEffect(() => {
+    setResult(null);
+    setIterations([]);
+    setError(null);
+  }, [funcStr, a, b, n, method]);
+
+  // Helper function to parse values that may contain 'pi', 'sqrt', etc.
+  const parseValue = (value: string): number => {
+    if (!value) return NaN;
+    
+    let processedValue = value.trim().toLowerCase();
+    
+    // Replace 'pi' with Math.PI value
+    processedValue = processedValue.replace(/\bpi\b/g, 'Math.PI');
+    processedValue = processedValue.replace(/\be\b/g, 'Math.E');
+    
+    // Add Math. prefix to mathematical functions
+    const mathFunctions = ['sqrt', 'cbrt', 'abs', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 
+                          'sinh', 'cosh', 'tanh', 'exp', 'log', 'log10', 'pow', 'ceil', 'floor', 'round'];
+    
+    mathFunctions.forEach(func => {
+      const regex = new RegExp(`(?<!Math\\.)\\b${func}\\b`, 'g');
+      processedValue = processedValue.replace(regex, `Math.${func}`);
+    });
+    
+    // Handle log as log10
+    processedValue = processedValue.replace(/\bMath\.log\b(?!\d)/g, 'Math.log10');
+    
+    // Evaluate expressions like '2*pi', 'pi/2', 'sqrt(3)', etc.
+    try {
+      // Allow numbers, operators, parentheses, dots, letters (for Math functions), and whitespace
+      if (/[^0-9+\-*/().a-zA-Z\s]/g.test(processedValue)) {
+        return NaN;
+      }
+      // Additional security: ensure it only contains Math. prefixed functions
+      if (!/^[\d+\-*/().\s]*$/.test(processedValue) && !/Math\./i.test(processedValue)) {
+        return NaN;
+      }
+      // Use Function constructor to safely evaluate mathematical expressions
+      return Function(`'use strict'; return (${processedValue})`)();
+    } catch {
+      return NaN;
+    }
+  };
+
   const handleCalculate = () => {
     setResult(null);
     setIterations([]);
     setError(null);
 
-    const numA = parseFloat(a);
-    const numB = parseFloat(b);
+    const numA = parseValue(a);
+    const numB = parseValue(b);
     const numN = parseInt(n, 10);
 
     if (isNaN(numA) || isNaN(numB) || isNaN(numN)) {
@@ -244,8 +308,8 @@ function Calculator() {
     }, 0);
   };
 
-  const parsedA = parseFloat(a);
-  const parsedB = parseFloat(b);
+  const parsedA = parseValue(a);
+  const parsedB = parseValue(b);
 
   return (
     <div className="app-layout">
@@ -304,11 +368,11 @@ function Calculator() {
         <div className='control-inline'>
           <label>
             a:
-            <input type="number" value={a} onChange={(e) => setA(e.target.value)} />
+            <input type="text" placeholder="Ej: 0, pi, 2*pi" value={a} onChange={(e) => setA(e.target.value)} />
           </label>
           <label>
             b:
-            <input type="number" value={b} onChange={(e) => setB(e.target.value)} />
+            <input type="text" placeholder="Ej: pi, pi/2, 2*pi" value={b} onChange={(e) => setB(e.target.value)} />
           </label>
         </div>
         <div className='control'>

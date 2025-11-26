@@ -16,30 +16,30 @@ const MathKeyboard: React.FC<MathKeyboardProps> = ({ onInsert }) => {
   ];
 
   const functions = [
-    { label: 'sin', value: 'sin(' },
-    { label: 'cos', value: 'cos(' },
-    { label: 'tan', value: 'tan(' },
-    { label: 'asin', value: 'asin(' },
-    { label: 'acos', value: 'acos(' },
-    { label: 'atan', value: 'atan(' },
+    { label: 'sin', value: 'sin(', tooltip: 'sin(x)' },
+    { label: 'cos', value: 'cos(', tooltip: 'cos(x)' },
+    { label: 'tan', value: 'tan(', tooltip: 'tan(x)' },
+    { label: 'sin⁻¹', value: 'asin(', tooltip: 'asin(x) - arcoseno' },
+    { label: 'cos⁻¹', value: 'acos(', tooltip: 'acos(x) - arcocoseno' },
+    { label: 'tan⁻¹', value: 'atan(', tooltip: 'atan(x) - arcotangente' },
   ];
 
   const hyperbolic = [
-    { label: 'sinh', value: 'sinh(' },
-    { label: 'cosh', value: 'cosh(' },
-    { label: 'tanh', value: 'tanh(' },
-    { label: 'asinh', value: 'asinh(' },
-    { label: 'acosh', value: 'acosh(' },
-    { label: 'atanh', value: 'atanh(' },
+    { label: 'sinh', value: 'sinh(', tooltip: 'sinh(x) - seno hiperbólico' },
+    { label: 'cosh', value: 'cosh(', tooltip: 'cosh(x) - coseno hiperbólico' },
+    { label: 'tanh', value: 'tanh(', tooltip: 'tanh(x) - tangente hiperbólica' },
+    { label: 'sinh⁻¹', value: 'asinh(', tooltip: 'asinh(x) - arcoseno hiperbólico' },
+    { label: 'cosh⁻¹', value: 'acosh(', tooltip: 'acosh(x) - arcocoseno hiperbólico' },
+    { label: 'tanh⁻¹', value: 'atanh(', tooltip: 'atanh(x) - arcotangente hiperbólica' },
   ];
 
   const advanced = [
-    { label: 'log', value: 'log(' },
-    { label: 'ln', value: 'ln(' },
-    { label: 'exp', value: 'exp(' },
-    { label: 'sqrt', value: 'sqrt(' },
-    { label: 'pow', value: 'pow(', tooltip: 'pow(base,exp)' },
-    { label: 'root', value: 'root(' },
+    { label: 'log', value: 'log(', tooltip: 'log₁₀(x) - logaritmo base 10' },
+    { label: 'ln', value: 'ln(', tooltip: 'ln(x) - logaritmo natural' },
+    { label: 'eˣ', value: 'exp(', tooltip: 'exp(x) - exponencial' },
+    { label: '√', value: 'sqrt(', tooltip: 'sqrt(x) - raíz cuadrada' },
+    { label: 'xʸ', value: 'pow(', tooltip: 'pow(base,exp) - potencia' },
+    { label: 'ⁿ√', value: 'root(', tooltip: 'root(x,n) - raíz n-ésima' },
   ];
 
   const constants = [
